@@ -1,10 +1,7 @@
 import { PropsWithChildren } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-
 export const CustomText = ({ children }: PropsWithChildren) => <Text>{children}</Text>;
-
-
 
 export default function HomeScreen() {
   return (
@@ -13,7 +10,6 @@ export default function HomeScreen() {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

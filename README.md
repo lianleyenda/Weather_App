@@ -2,10 +2,10 @@
 
 This is a [React Native](https://reactnative.dev/) project built with [Expo](https://expo.dev/) and [React Native Reusables](https://reactnativereusables.com).
 
-It was initialized using the following command, then the `Minimal (Nativewind)` template was selected when prompted:
+It was initialized using the following command:
 
 ```bash
-npx @react-native-reusables/cli@latest init
+npx react-native-reusables/cli@latest init -t learn-rn-with-reusables
 ```
 
 ## Getting Started

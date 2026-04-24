@@ -1,77 +1,121 @@
-import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
-import { Link, Stack } from 'expo-router';
-import { MoonStarIcon, StarIcon, SunIcon } from 'lucide-react-native';
-import { useColorScheme } from 'nativewind';
-import * as React from 'react';
-import { Image, type ImageStyle, View } from 'react-native';
+import usarPronosticoClimatico from '@/src/clima/hooks';
+import LayoutParaLaPantallaPrincipalDelClima from '@/src/clima/layouts';
+import NavParaDesplazarseEntreDias from '@/src/dias';
+import { usarFechas } from '@/src/dias/hooks';
+import usarLocalizacion from '@/src/localizacion';
+import { View, Text } from 'react-native';
+import IconosClima from '@/src/iconos';
+import { Droplets, Wind, Gauge } from 'lucide-react-native';
 
-const LOGO = {
-  light: require('@/assets/images/react-native-reusables-light.png'),
-  dark: require('@/assets/images/react-native-reusables-dark.png'),
-};
+export default function Index() {
+  const { fechas, irAlDiaAnterior, irAlDiaSiguiente, fechaActual } = usarFechas();
+  const { coordenadas, coordenadasDisponibles } = usarLocalizacion();
 
-const SCREEN_OPTIONS = {
-  title: 'React Native Reusables',
-  headerTransparent: true,
-  headerRight: () => <ThemeToggle />,
-};
+  const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 
-const IMAGE_STYLE: ImageStyle = {
-  height: 76,
-  width: 76,
-};
-
-export default function Screen() {
-  const { colorScheme } = useColorScheme();
+  if (!API_KEY) {
+    return <Text style={{ color: "black" }}>Falta API KEY</Text>;
+  }
 
   return (
-    <>
-      <Stack.Screen options={SCREEN_OPTIONS} />
-      <View className="flex-1 items-center justify-center gap-8 p-4">
-        <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
-        <View className="gap-2 p-4">
-          <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-            1. Edit <Text variant="code">app/index.tsx</Text> to get started.
+    <LayoutParaLaPantallaPrincipalDelClima>
+      <NavParaDesplazarseEntreDias
+        {...fechas()}
+        irAlDiaAnterior={irAlDiaAnterior}
+        irAlDiaSiguiente={irAlDiaSiguiente}
+      />
+
+      <View testID='localizacion' style={{ flex: 1 }}>
+        {!coordenadasDisponibles() ? (
+          <Text style={{ color: "black", textAlign: "center" }}>
+            Obteniendo ubicación...
           </Text>
-          <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-            2. Save to see your changes instantly.
-          </Text>
-        </View>
-        <View className="flex-row gap-2">
-          <Link href="https://reactnativereusables.com" asChild>
-            <Button>
-              <Text>Browse the Docs</Text>
-            </Button>
-          </Link>
-          <Link href="https://github.com/founded-labs/react-native-reusables" asChild>
-            <Button variant="ghost">
-              <Text>Star the Repo</Text>
-              <Icon as={StarIcon} />
-            </Button>
-          </Link>
-        </View>
+        ) : (
+          <TarjetaParaDatosClimaticos
+            fecha={fechaActual}
+            latitud={coordenadas().latitud}
+            longitud={coordenadas().longitud}
+            clave_de_api={API_KEY}
+          />
+        )}
       </View>
-    </>
+    </LayoutParaLaPantallaPrincipalDelClima>
   );
 }
 
-const THEME_ICONS = {
-  light: SunIcon,
-  dark: MoonStarIcon,
+const TarjetaParaDatosClimaticos = (
+  props: Parameters<typeof usarPronosticoClimatico>[0]
+) => {
+  const {
+    ciudad,
+    temperaturaEnGradosCelsius,
+    estaPendiente,
+    huboUnProblema,
+    condicionClimatica,
+    humedadEnPorcentaje,
+    presionEnHectopascales,
+    velocidadDelVientoEnKilometrosPorHora,
+    temperaturaMaximaEnGradosCelsius,
+    temperaturaMinimaEnGradosCelsius,
+  } = usarPronosticoClimatico(props);
+
+  if (estaPendiente()) {
+    return <Text style={{ color: "black" }}>Cargando clima...</Text>;
+  }
+
+  if (huboUnProblema()) {
+    return <Text style={{ color: "black" }}>Error al cargar clima</Text>;
+  }
+
+
+ return (
+  <View style={{ flex: 1, alignItems: "center", justifyContent: "space-between", paddingVertical: 20 }}>
+    
+    <Text testID='Nombre-Ciudad' style={{ color: "black", fontSize: 22, fontWeight: "bold", letterSpacing: 2 }}>
+      {ciudad().toUpperCase()}
+    </Text>
+
+    {/* Ícono */}
+    <IconosClima  condicion={condicionClimatica()} size={180} />
+
+
+    <View style={{ gap: 10, alignSelf: "flex-start", paddingLeft: 30 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Droplets size={18} color="black" />
+        <Text style={{ color: "black", fontSize: 14 }}>{humedadEnPorcentaje()}%</Text>
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Gauge size={18} color="black" />
+        <Text style={{ color: "black", fontSize: 14 }}>{presionEnHectopascales()} hPa</Text>
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Wind size={18} color="black" />
+        <Text style={{ color: "black", fontSize: 14 }}>{velocidadDelVientoEnKilometrosPorHora()} km/h</Text>
+      </View>
+    </View>
+
+<View style={{ alignItems: "center" }}>
+  <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
+    <Text testID='temperatura-min' style={{ color: "black", opacity: 0.6, fontSize: 20, marginBottom: 6 }}>
+      {temperaturaMinimaEnGradosCelsius()}°
+    </Text>
+    <Text testID='temperatura' style={{ color: "black", fontSize: 50, fontWeight: "bold" }}>
+      {temperaturaEnGradosCelsius()}°C
+    </Text>
+    <Text testID='temperatura-max' style={{ color: "black", opacity: 0.6, fontSize: 20, marginBottom: 6 }}>
+      {temperaturaMaximaEnGradosCelsius()}°
+    </Text>
+  </View>
+
+  <View style={{ flexDirection: "row", alignItems: "center", width: 200, marginTop: 10 }}>
+    <View style={{ flex: 1, height: 1, backgroundColor: "black" }} />
+    <Text style={{ color: "black", fontSize: 12, marginHorizontal: 8, letterSpacing: 1 }}>
+      ACTUAL
+    </Text>
+    <View style={{ flex: 1, height: 1, backgroundColor: "black" }} />
+  </View>
+</View>
+</View>
+
+);
 };
-
-function ThemeToggle() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-
-  return (
-    <Button
-      onPressIn={toggleColorScheme}
-      size="icon"
-      variant="ghost"
-      className="ios:size-9 rounded-full web:mx-4">
-      <Icon as={THEME_ICONS[colorScheme ?? 'light']} className="size-5" />
-    </Button>
-  );
-}
