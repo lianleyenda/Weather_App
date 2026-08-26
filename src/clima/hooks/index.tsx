@@ -12,7 +12,7 @@ export const usarPronosticoClimatico = ({
   clave_de_api: string;
 }) => {
   
-  const fechaFormateada = fecha.toISOString().split('T')[0]; // "2026-04-23"
+  const fechaFormateada = fecha.toISOString().split('T')[0]; 
 
 const { isPending, isFetched, isError, error, data } = useQuery({
   queryKey: [fechaFormateada, latitud.toPrecision(2), longitud.toPrecision(2)],
