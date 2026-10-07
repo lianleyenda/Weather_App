@@ -14,7 +14,8 @@ permissions:
 
 jobs:
   build-and-test:
-    runs-on: self-hosted
+    # Usamos los runners oficiales de GitHub
+    runs-on: ubuntu-latest
 
     steps:
       - name: Descargar código
@@ -60,6 +61,53 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }} # No sube imagen si es un Pull Request
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+    deploy:
+      needs: build-and-test
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      runs-on: ubuntu-latest
+
+       steps:
+         - name: Desplegar en la VM vía SSH
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+             host: ${{ secrets.10.56.31.32 }}
+             username: ${{ secrets.Lian }}
+             key: ${{ secrets.b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACCoKm5s9cC4fxdJSd9dJ2iQLkkoCyezmhX1U3rZdUIj/gAAAJhdxIahXcSG
+oQAAAAtzc2gtZWQyNTUxOQAAACCoKm5s9cC4fxdJSd9dJ2iQLkkoCyezmhX1U3rZdUIj/g
+AAAECdacODmHLrHtxp+Em8NIJBMr81jfercBmszxIoVzBsxagqbmz1wLh/F0lJ310naJAu
+SSgLJ7OaFfVTetl1QiP+AAAADmdpdGh1Yi1hY3Rpb25zAQIDBAUGBw== }}
+            port: 22
+            script: |
+              # 1. Convertir el nombre del repositorio a minúsculas para Docker/GHCR
+              REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+              IMAGE_TAG="ghcr.io/${REPO_LOWER}:latest"
+              CONTAINER_NAME="weather-app"
+              PORT="8000" # Puedes cambiarlo si el 8000 está ocupado
+
+               # 2. Autenticarse en GHCR dentro de la VM
+              echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+              # 3. Descargar la versión más reciente
+              docker pull $IMAGE_TAG
+
+              # 4. Detener y eliminar el contenedor anterior si ya existía
+              docker stop $CONTAINER_NAME || true
+              docker rm $CONTAINER_NAME || true
+
+              # 5. Iniciar el nuevo contenedor
+              docker run -d \
+                --name $CONTAINER_NAME \
+                --restart always \
+                -p $PORT:80 \
+                $IMAGE_TAG
+
+              # 6. Limpiar imágenes antiguas no utilizadas
+              docker image prune -f
+
+              # 7. Verificar que esté corriendo
+              docker ps -f name=$CONTAINER_NAME
