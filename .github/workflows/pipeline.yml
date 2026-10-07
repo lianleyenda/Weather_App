@@ -32,7 +32,7 @@ jobs:
           cache: pnpm
 
       - name: Instalar dependencias
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Ejecutar tests
         run: pnpm tests
