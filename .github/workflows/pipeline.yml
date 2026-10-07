@@ -73,8 +73,8 @@ jobs:
       - name: Desplegar en la VM vía SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.10.56.31.32 }}
-          username: ${{ secrets.Lian }}
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY}}
           port: 22
           script: |
