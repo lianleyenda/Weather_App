@@ -75,11 +75,7 @@ jobs:
         with:
           host: ${{ secrets.10.56.31.32 }}
           username: ${{ secrets.Lian }}
-          key: ${{ secrets.b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-QyNTUxOQAAACCoKm5s9cC4fxdJSd9dJ2iQLkkoCyezmhX1U3rZdUIj/gAAAJhdxIahXcSG
-oQAAAAtzc2gtZWQyNTUxOQAAACCoKm5s9cC4fxdJSd9dJ2iQLkkoCyezmhX1U3rZdUIj/g
-AAAECdacODmHLrHtxp+Em8NIJBMr81jfercBmszxIoVzBsxagqbmz1wLh/F0lJ310naJAu
-SSgLJ7OaFfVTetl1QiP+AAAADmdpdGh1Yi1hY3Rpb25zAQIDBAUGBw== }}
+          key: ${{ secrets.VM_SSH_KEY}}
           port: 22
           script: |
             REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
