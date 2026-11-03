@@ -15,7 +15,6 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Descargar código
         uses: actions/checkout@v4
@@ -60,24 +59,21 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }} # No sube imagen si es un Pull Request
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-   deploy:
+  deploy:
     needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, weather-vm]
-
     steps:
       - name: Desplegar nueva versión
         run: |
           cd /opt/weather-app
           echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
           [ -f .env ] && cp .env .env.previous
           echo "IMAGE_TAG=sha-$(echo ${{ github.sha }} | cut -c1-7)" > .env
-
           docker compose pull
           docker compose up -d
           docker image prune -f
@@ -98,5 +94,5 @@ jobs:
           if [ -f .env.previous ]; then
             cp .env.previous .env
             docker compose up -d
-            echo "Rollback a $(cat .env)"
+            echo "Rollback realizado"
           fi
