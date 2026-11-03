@@ -64,35 +64,39 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  deploy:
+   deploy:
     needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, weather-vm]
 
     steps:
-      - name: Desplegar en la VM vía SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY}}
-          port: 22
-          script: |
-            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            IMAGE_TAG="ghcr.io/${REPO_LOWER}:latest"
-            CONTAINER_NAME="weather-app"
-            PORT="8000"
+      - name: Desplegar nueva versión
+        run: |
+          cd /opt/weather-app
+          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull $IMAGE_TAG
-            docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
+          [ -f .env ] && cp .env .env.previous
+          echo "IMAGE_TAG=sha-$(echo ${{ github.sha }} | cut -c1-7)" > .env
 
-            docker run -d \
-              --name $CONTAINER_NAME \
-              --restart always \
-              -p $PORT:80 \
-              $IMAGE_TAG
+          docker compose pull
+          docker compose up -d
+          docker image prune -f
 
-            docker image prune -f
-            docker ps -f name=$CONTAINER_NAME
+      - name: Verificar despliegue
+        run: |
+          for i in $(seq 1 10); do
+            curl -fsS http://localhost:8000 > /dev/null && echo "OK" && exit 0
+            sleep 5
+          done
+          echo "La app no respondió"
+          exit 1
+
+      - name: Rollback si falló
+        if: failure()
+        run: |
+          cd /opt/weather-app
+          if [ -f .env.previous ]; then
+            cp .env.previous .env
+            docker compose up -d
+            echo "Rollback a $(cat .env)"
+          fi
