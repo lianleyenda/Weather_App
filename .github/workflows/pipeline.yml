@@ -41,6 +41,12 @@ jobs:
         env:
           EXPO_PUBLIC_API_KEY: ${{ secrets.EXPO_PUBLIC_API_KEY }}
 
+      - name: Comprobar que la clave quedó en el build      # <- nuevo
+        run: |
+          if grep -rqF "$EXPO_PUBLIC_API_KEY" dist; then echo "OK: la clave está en el bundle"; else echo "FALTA: la clave NO está en el bundle"; exit 1; fi
+        env:
+          EXPO_PUBLIC_API_KEY: ${{ secrets.EXPO_PUBLIC_API_KEY }}
+
       - name: Generar etiquetas en minúsculas
         id: meta
         uses: docker/metadata-action@v5
