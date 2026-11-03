@@ -41,9 +41,11 @@ jobs:
         env:
           EXPO_PUBLIC_API_KEY: ${{ secrets.EXPO_PUBLIC_API_KEY }}
 
-      - name: Comprobar que la clave quedó en el build      # <- nuevo
+      - name: Comprobar que la clave quedó en el build
         run: |
-          if grep -rqF "$EXPO_PUBLIC_API_KEY" dist; then echo "OK: la clave está en el bundle"; else echo "FALTA: la clave NO está en el bundle"; exit 1; fi
+          test -n "$EXPO_PUBLIC_API_KEY" || { echo "El secreto está VACÍO o no existe"; exit 1; }
+          echo "Longitud de la clave: ${#EXPO_PUBLIC_API_KEY}"
+          grep -rqF "$EXPO_PUBLIC_API_KEY" dist && echo "OK: la clave está en el bundle" || { echo "FALTA: la clave NO está en el bundle"; exit 1; }
         env:
           EXPO_PUBLIC_API_KEY: ${{ secrets.EXPO_PUBLIC_API_KEY }}
 
